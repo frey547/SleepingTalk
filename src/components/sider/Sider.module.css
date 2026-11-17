@@ -204,14 +204,24 @@
   position: absolute;
   inset: 0;
   z-index: 799;
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile {
   width: 300px;
   max-width: calc(100vw - 48px);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 12px 0 32px rgba(0, 0, 0, 0.14);
 
   .listWrap {
     margin-top: 16px;
+  }
+
+  .newChat {
+    min-height: 48px;
+    font-size: 16px;
   }
 
   .sectionHeader {
@@ -227,6 +237,7 @@
 
   .settings {
     padding: 9px 10px;
+    min-height: 48px;
   }
 
   .settingsIcon {

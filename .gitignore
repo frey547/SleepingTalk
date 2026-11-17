@@ -9,3 +9,22 @@ build/
 .env.*
 !.env.example
 tmp/
+.test-dist/
+
+# Local editor and Android toolchain settings
+.vscode/
+.idea/
+android/local.properties
+
+# Local signing material and credentials
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+signing.properties
+google-services.json
+
+# Locally retained icons with unverified redistribution permissions
+/public/icons/icon-192.png
+/public/icons/icon-512.png

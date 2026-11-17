@@ -32,6 +32,7 @@ import { useVoiceInput } from './useVoiceInput.js'
 import { VoiceButton } from './VoiceButton.js'
 import { Spectrum } from './Spectrum.js'
 import { useTranslate } from '../../i18n/index.js'
+import { providerCapabilities } from '../../services/api/providers.js'
 import styles from './ChatInput.module.css'
 
 /** 输入框：自适应高度的文本框 + 文件 + 深度思考与智能搜索开关 + 语音输入 + 发送 / 停止 */
@@ -53,6 +54,8 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   const importingHistory = useChatStore((state) => state.importingHistory)
   const isMobile = useIsMobile()
   const search = useSettings((state) => state.search)
+  const provider = useSettings((state) => state.apiProvider)
+  const capabilities = providerCapabilities[provider]
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const togglesRef = useRef<HTMLDivElement>(null)
@@ -75,7 +78,12 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   }, [t])
 
   const acceptFiles = (files: File[]) => {
-    if (files.length === 0 || useChatStore.getState().importingHistory || !ensureApiKey()) {
+    if (
+      !capabilities.attachments ||
+      files.length === 0 ||
+      useChatStore.getState().importingHistory ||
+      !ensureApiKey()
+    ) {
       return
     }
     const error = addDraftFiles(sessionId, files, useSettings.getState().apiKey ?? '')
@@ -130,13 +138,16 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   const recording = voice.status === 'recording'
 
   // 排队、上传中或上传失败的附件都留在输入框，全部上传成功后才能发送
-  const canSend = !importingHistory && !streaming && voice.status === 'idle' && draftReady
+  const providerDraftReady = capabilities.attachments || attachments.length === 0
+  const canSend =
+    !importingHistory && !streaming && voice.status === 'idle' && draftReady && providerDraftReady
 
   const send = () => {
     if (
       useChatStore.getState().importingHistory ||
       voice.status !== 'idle' ||
-      !prepareDraftMessage(getDraft(sessionId), useUploads.getState().tasks)
+      !prepareDraftMessage(getDraft(sessionId), useUploads.getState().tasks) ||
+      (!capabilities.attachments && getDraft(sessionId).attachments.length > 0)
     ) {
       return
     }
@@ -208,6 +219,7 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               className={clsx(styles.toggle, thinking && styles.selected)}
               aria-label={t('thinkingSwitch')}
               aria-pressed={thinking}
+              disabled={!capabilities.thinking}
               onClick={() => setThinking(!thinking)}
             >
               <IconThinkOutline14 />
@@ -220,6 +232,7 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               className={clsx(styles.toggle, search && styles.selected)}
               aria-label={t('search')}
               aria-pressed={search}
+              disabled={!capabilities.search}
               onClick={() => setSearch(!search)}
             >
               <IconGlobeLanguageOutline14 />
@@ -230,12 +243,13 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
         <div className={styles.right}>
           <VoiceButton
             status={voice.status}
-            disabled={!voice.available}
+            disabled={!voice.available || !capabilities.speech}
             seconds={voice.seconds}
             onClick={() => {
               if (
-                voice.status !== 'idle' ||
-                (!useChatStore.getState().importingHistory && ensureApiKey())
+                capabilities.speech &&
+                (voice.status !== 'idle' ||
+                  (!useChatStore.getState().importingHistory && ensureApiKey()))
               ) {
                 void voice.toggle()
               }
@@ -246,7 +260,7 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
             tone="primary"
             icon={<IconPaperclipOutline16 />}
             tooltip={t('uploadFile')}
-            disabled={importingHistory}
+            disabled={importingHistory || !capabilities.attachments}
             onClick={() => ensureApiKey() && fileInputRef.current?.click()}
           />
           <input

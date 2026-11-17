@@ -115,7 +115,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                   className={styles.noticeAction}
                   href={TOP_UP_URL}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   {t('topUp')}
                 </a>

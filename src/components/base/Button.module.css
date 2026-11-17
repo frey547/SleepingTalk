@@ -95,3 +95,11 @@
     box-shadow: 0 0 0 2px var(--dsw-alias-state-error-primary);
   }
 }
+
+@media not all and (min-width: 768px) {
+  .l,
+  .m,
+  .s {
+    min-height: 44px;
+  }
+}

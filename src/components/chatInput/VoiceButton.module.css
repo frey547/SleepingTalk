@@ -47,6 +47,13 @@
   }
 }
 
+@media not all and (min-width: 768px) {
+  .button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .disabled {
   color: var(--dsw-alias-label-caption);
   cursor: not-allowed;

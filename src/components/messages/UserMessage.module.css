@@ -102,3 +102,16 @@
   gap: 8px;
   margin: 6px 10px 10px;
 }
+
+@media not all and (min-width: 768px) {
+  .bottom {
+    min-height: 44px;
+    height: auto;
+    gap: 4px;
+  }
+
+  .actions {
+    gap: 2px;
+    opacity: 1;
+  }
+}

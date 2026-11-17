@@ -29,12 +29,16 @@ export const createConfig = ({
   devServer,
 }: ConfigOptions = {}): Configuration => ({
   mode: dev ? 'development' : 'production',
-  entry: './src/main.tsx',
+  entry: {
+    main: './src/main.tsx',
+    sw: './src/pwa/sw.js',
+  },
   output: {
     path: path.resolve(root, 'dist'),
     // 运行时按当前脚本地址推导资源路径，file:// 下异步 chunk、字体都按相对位置加载
     publicPath: 'auto',
-    filename: 'static/js/[name].[contenthash:8].js',
+    filename: (pathData) =>
+      pathData.chunk?.name === 'sw' ? 'sw.js' : 'static/js/[name].[contenthash:8].js',
     chunkFilename: 'static/js/async/[name].[contenthash:8].js',
     cssFilename: 'static/css/[name].[contenthash:8].css',
     cssChunkFilename: 'static/css/async/[name].[contenthash:8].css',
@@ -78,15 +82,24 @@ export const createConfig = ({
     new rspack.HtmlRspackPlugin({
       template: './src/index.html',
       scriptLoading: 'defer',
+      chunks: ['main'],
       meta: { 'application-version': version },
     }),
-    new rspack.DefinePlugin({ __API_ORIGIN__: JSON.stringify(apiOrigin) }),
+    new rspack.DefinePlugin({
+      __API_ORIGIN__: JSON.stringify(apiOrigin),
+      __APP_VERSION__: JSON.stringify(version),
+      __PWA_ENABLED__: JSON.stringify(!dev),
+    }),
     new rspack.CopyRspackPlugin({
-      patterns: [{ from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' }],
+      patterns: [
+        { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        { from: path.resolve(root, 'public'), to: '.', toType: 'dir' },
+      ],
     }),
   ],
   performance: { hints: false },
-  devServer: { port: 8090, ...devServer },
+  // 同时支持 localhost 与同一局域网内的设备通过电脑 IP 访问。
+  devServer: { host: '0.0.0.0', port: 8090, ...devServer },
 })
 
 // eslint-disable-next-line import/no-default-export

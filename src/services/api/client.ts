@@ -34,12 +34,36 @@ export class ApiError extends Error {
   constructor(
     readonly kind: ApiErrorKind,
     message: string | TranslationMessage,
-    readonly status?: number
+    readonly status?: number,
+    readonly requestUrl?: string,
+    /** 已脱敏的原始响应体，仅用于向用户展示诊断信息。 */
+    readonly responseBody?: string
   ) {
     super(typeof message === 'string' ? message : translate(message.key, message.params))
     this.name = 'ApiError'
     this.localMessage = typeof message === 'string' ? undefined : message
   }
+}
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** 服务端偶尔会回显请求字段；保存错误详情前统一移除鉴权信息。 */
+export const redactSensitiveText = (text: string, secrets: string[] = []): string => {
+  let redacted = text
+  for (const secret of secrets.filter(Boolean)) {
+    redacted = redacted.replace(new RegExp(escapeRegExp(secret), 'g'), '[REDACTED]')
+  }
+  return redacted
+    .replace(/(authorization\s*[:=]\s*["']?bearer\s+)[^\s"',}]+/gi, '$1[REDACTED]')
+    .replace(/(["']?(?:api[_-]?key|token)["']?\s*[:=]\s*["'])[^"']+/gi, '$1[REDACTED]')
+    .replace(/\bsk-[A-Za-z0-9_-]{8,}\b/g, 'sk-[REDACTED]')
+}
+
+const requestSecrets = (headers: HeadersInit | undefined): string[] => {
+  const normalized = new Headers(headers)
+  const authorization = normalized.get('Authorization') ?? ''
+  const bearer = /^Bearer\s+(.+)$/i.exec(authorization)?.[1]
+  return [bearer ?? '', normalized.get('x-api-key') ?? ''].filter(Boolean)
 }
 
 const isErrorBody = (value: unknown): value is ApiErrorBody =>
@@ -48,22 +72,25 @@ const isErrorBody = (value: unknown): value is ApiErrorBody =>
   'error' in value &&
   typeof (value as ApiErrorBody).error?.message === 'string'
 
-const readErrorResponse = async (
+export const readErrorResponse = async (
   response: Response,
   kind: 'http' | 'protocol' = 'http',
-  fallback = response.statusText
+  fallback = response.statusText,
+  requestUrl = response.url,
+  secrets: string[] = []
 ): Promise<ApiError> => {
   const text = await response.text().catch(() => '')
-  let message = text || fallback
+  const safeText = redactSensitiveText(text, secrets)
+  let message = safeText || fallback
   try {
-    const body: unknown = JSON.parse(text)
+    const body: unknown = JSON.parse(safeText)
     if (isErrorBody(body)) {
       message = body.error.message
     }
   } catch {
     // 非 JSON 响应体直接展示原文
   }
-  return new ApiError(kind, message, response.status)
+  return new ApiError(kind, message, response.status, requestUrl, safeText || undefined)
 }
 
 export const request = async (url: string, init: RequestInit): Promise<Response> => {
@@ -74,10 +101,21 @@ export const request = async (url: string, init: RequestInit): Promise<Response>
     if (init.signal?.aborted) {
       throw error
     }
-    throw new ApiError('network', error instanceof Error ? error.message : String(error))
+    throw new ApiError(
+      'network',
+      error instanceof Error ? error.message : String(error),
+      undefined,
+      url
+    )
   }
   if (!response.ok) {
-    throw await readErrorResponse(response)
+    throw await readErrorResponse(
+      response,
+      'http',
+      response.statusText,
+      url,
+      requestSecrets(init.headers)
+    )
   }
   return response
 }
@@ -146,13 +184,14 @@ export async function* streamMessage(
   body: CreateMessageRequest,
   signal: AbortSignal
 ): AsyncGenerator<MessageStreamEvent> {
+  const headers = {
+    ...anthropicHeaders(apiKey, hasFile(body)),
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+  }
   const response = await request(`${ANTHROPIC_BASE_URL}/messages`, {
     method: 'POST',
-    headers: {
-      ...anthropicHeaders(apiKey, hasFile(body)),
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
-    },
+    headers,
     body: JSON.stringify({ ...body, stream: true }),
     signal,
   })
@@ -170,10 +209,13 @@ export async function* streamMessage(
       }
     }
     if (isErrorBody(payload)) {
-      throw new ApiError('stream', payload.error.message)
+      throw new ApiError(
+        'stream',
+        redactSensitiveText(payload.error.message, requestSecrets(headers))
+      )
     }
     if (eventName === 'error') {
-      throw new ApiError('stream', data)
+      throw new ApiError('stream', redactSensitiveText(data, requestSecrets(headers)))
     }
     const event = readMessageEvent(payload)
     if (!event) {

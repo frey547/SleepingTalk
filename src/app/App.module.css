@@ -20,6 +20,23 @@
   min-height: 0;
 }
 
+.offlineNotice {
+  position: relative;
+  z-index: 4;
+  flex: none;
+  padding: max(8px, env(safe-area-inset-top)) 16px 8px;
+  color: #5f4100;
+  background-color: #fff1c2;
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+}
+
+:global(body[data-ds-dark-theme]) .offlineNotice {
+  color: #ffe9a6;
+  background-color: #493b16;
+}
+
 .saveError {
   display: flex;
   align-items: center;

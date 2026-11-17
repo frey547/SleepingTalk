@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#f7f8fa" />
+    <title>SleepingTalk - 离线</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: #f7f8fa;
+        color: #20232d;
+      }
+      main {
+        max-width: 32rem;
+        padding: 32px 24px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      p {
+        margin: 0;
+        color: #626878;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      button {
+        min-height: 44px;
+        margin-top: 24px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 6px;
+        color: #fff;
+        background: #4d6bfe;
+        font: inherit;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #17181c;
+          color: #f2f3f5;
+        }
+        p {
+          color: #a9adb7;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>当前无法连接网络</h1>
+      <p>应用外壳已可离线使用。请检查网络连接，恢复后即可继续聊天。</p>
+      <button type="button" onclick="location.reload()">重新连接</button>
+    </main>
+  </body>
+</html>

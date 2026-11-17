@@ -28,7 +28,12 @@ export const Toast = () => {
       <span className={styles.content}>
         {t(message.key, message.params)}
         {message.link ? (
-          <a className={styles.link} href={message.link.href} target="_blank" rel="noreferrer">
+          <a
+            className={styles.link}
+            href={message.link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {t(message.link.key)}
           </a>
         ) : null}

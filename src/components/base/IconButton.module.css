@@ -54,3 +54,11 @@
 .primary {
   color: var(--dsw-alias-label-primary);
 }
+
+@media not all and (min-width: 768px) {
+  .xs,
+  .m {
+    width: 44px;
+    height: 44px;
+  }
+}

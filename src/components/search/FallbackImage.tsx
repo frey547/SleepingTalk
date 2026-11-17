@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode, memo, useState } from 'react'
+import { safeHttpUrl } from '../../utils/url.js'
 
 /**
  * 带加载兜底的图片：loading 骨架占位 → 成功显示 → 失败展示 fallback 内容。
@@ -25,16 +26,18 @@ export const FallbackImage = memo(function FallbackImage({
   fallbackClassName: string
   style: CSSProperties | undefined
 }) {
+  const safeSrc = safeHttpUrl(src)
   const [loadResult, setLoadResult] = useState<'loading' | 'error' | 'loaded'>(
-    src ? 'loading' : 'error'
+    safeSrc ? 'loading' : 'error'
   )
 
   return (
     <div className={className} style={style}>
       {loadResult !== 'error' ? (
         <img
-          src={src}
+          src={safeSrc}
           alt=""
+          referrerPolicy="no-referrer"
           onLoad={() => setLoadResult('loaded')}
           onError={() => setLoadResult('error')}
           style={{ display: loadResult === 'loaded' ? 'block' : 'none' }}

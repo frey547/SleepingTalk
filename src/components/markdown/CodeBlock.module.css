@@ -45,3 +45,24 @@
     height: 14px;
   }
 }
+
+@media not all and (min-width: 768px) {
+  .container {
+    min-height: 44px;
+    padding: 2px 4px 2px 8px;
+  }
+
+  .name {
+    min-width: 0;
+    margin-left: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .button {
+    min-width: 44px;
+    height: 44px;
+    padding-inline: 10px;
+  }
+}

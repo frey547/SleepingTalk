@@ -32,6 +32,7 @@ import { Tooltip } from '../base/Tooltip.js'
 import { Markdown } from '../markdown/Markdown.js'
 import { SiteThumbnails } from '../search/SiteLogo.js'
 import { toggleSearchPanel, useSearchPanel } from '../search/searchPanelState.js'
+import { safeHttpUrl } from '../../utils/url.js'
 import styles from './ReplyArea.module.css'
 import './thinking.markdown.css'
 
@@ -276,24 +277,27 @@ const ToolRow = ({
   </div>
 )
 
-const PageLink = ({ page, failedTip }: { page: PageItem; failedTip?: string }) => (
-  <span
-    className={clsx(styles.page, page.status === 'failed' ? styles.pageFailed : styles.pageDone)}
-  >
-    {page.status === 'failed' ? (
-      <Tooltip content={failedTip}>
-        <span className={styles.pageText}>{page.title}</span>
-      </Tooltip>
-    ) : (
-      <a className={styles.pageText} href={page.url} target="_blank" rel="noreferrer">
-        {page.title}
-      </a>
-    )}
-    <span className={styles.pageIcon}>
-      <IconRightUpOutline14 />
+const PageLink = ({ page, failedTip }: { page: PageItem; failedTip?: string }) => {
+  const href = safeHttpUrl(page.url)
+  return (
+    <span
+      className={clsx(styles.page, page.status === 'failed' ? styles.pageFailed : styles.pageDone)}
+    >
+      {page.status === 'failed' || !href ? (
+        <Tooltip content={failedTip}>
+          <span className={styles.pageText}>{page.title}</span>
+        </Tooltip>
+      ) : (
+        <a className={styles.pageText} href={href} target="_blank" rel="noopener noreferrer">
+          {page.title}
+        </a>
+      )}
+      <span className={styles.pageIcon}>
+        <IconRightUpOutline14 />
+      </span>
     </span>
-  </span>
-)
+  )
+}
 
 /** 边想边搜打开的网页：「浏览 N 个页面」+ 最多 5 个页面 */
 const OpenRow = ({

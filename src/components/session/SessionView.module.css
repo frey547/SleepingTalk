@@ -64,6 +64,8 @@
     position: relative;
     bottom: auto;
     flex-shrink: 0;
+    width: calc(100% - 24px);
+    max-width: none;
     margin: 0 auto;
     padding-bottom: env(safe-area-inset-bottom);
   }

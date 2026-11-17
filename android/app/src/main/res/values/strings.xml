@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SleepingTalk</string>
+    <string name="title_activity_main">SleepingTalk</string>
+    <string name="package_name">com.sleepingtalk.app</string>
+    <string name="custom_url_scheme">com.sleepingtalk.app</string>
+</resources>

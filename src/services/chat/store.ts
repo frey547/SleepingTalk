@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { createId } from '../../utils/id.js'
-import { ApiError, streamMessage } from '../api/client.js'
+import { ApiError } from '../api/client.js'
 import type { ChatModel, CreateMessageRequest } from '../api/types.js'
+import { streamProviderMessage, type ProviderConfig } from '../api/providers.js'
 import { extractFileIds, getFileErrorCode, isRetryableApiError } from '../api/errors.js'
 import { cancelUpload, describeUploadError, uploadAttachment, useUploads } from '../attachments.js'
 import { useSettings } from '../settings.js'
@@ -36,6 +37,7 @@ import {
 const MODEL: ChatModel = 'deepseek-flash'
 /** 所有生成请求统一携带的助手身份说明 */
 const SYSTEM_PROMPT = '该助手为DeepSeek，由深度求索公司创造。'
+const OPENAI_SYSTEM_PROMPT = 'You are a helpful assistant.'
 /** 保留最近打开的详情；当前会话、生成中及尚未成功保存的会话不淘汰。 */
 const SESSION_CACHE_LIMIT = 5
 /** 安全审核固定开启，所有请求都走扩展模式 */
@@ -255,14 +257,15 @@ export const bindChatPersistence = () => {
 
 /** 按当前开关创建回复：深度思考对应 thinking，智能搜索控制 deepseek_web_search。 */
 const createReply = (): AssistantMessage => {
-  const { thinking, search } = useSettings.getState()
+  const { thinking, search, apiProvider, openAI } = useSettings.getState()
   return {
     id: createId(),
     role: 'assistant',
     createdAt: Date.now(),
-    model: MODEL,
-    thinking,
-    search,
+    model: apiProvider === 'openai' ? openAI.model : MODEL,
+    provider: apiProvider,
+    thinking: apiProvider === 'deepseek' && thinking,
+    search: apiProvider === 'deepseek' && search,
     prefix: true,
     status: 'pending',
     blocks: [],
@@ -710,6 +713,7 @@ export const continueReply = (sessionId: string, messageId: string) => {
     ...previous,
     // 未记录请求配置的回复，续写时使用默认模型和当前开关。
     model: previous.model ?? MODEL,
+    provider: previous.provider ?? 'deepseek',
     thinking: previous.thinking ?? thinking,
     search: previous.search ?? search,
     status: 'pending',
@@ -813,7 +817,15 @@ const refreshRequest = (sessionId: string, request: Request): Request => {
  * - 历史轮次（仅进入上下文的）中没有 serverId 的附件，多为导入的图片：从最新的消息往前逐张补传，
  *   失败静默跳过，该附件不进入本次请求，下次发送时再试。
  */
-const prepareFiles = async (sessionId: string, request: Request, signal: AbortSignal) => {
+const prepareFiles = async (
+  sessionId: string,
+  request: Request,
+  signal: AbortSignal,
+  provider: ProviderConfig['id']
+) => {
+  if (provider === 'openai') {
+    return request
+  }
   const epoch = historyEpoch
   // 服务端判定 file_id 失效时会清掉会话里的 serverId，先用最新消息替换请求快照，
   // 否则快照里仍是旧 id，补传会直接复用它。
@@ -974,13 +986,25 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
   }
   streamFlushes.set(sessionId, flush)
 
+  const settings = useSettings.getState()
+  const providerId = initial.provider ?? 'deepseek'
+  const provider: ProviderConfig =
+    providerId === 'openai'
+      ? {
+          id: 'openai',
+          baseUrl: settings.openAI.baseUrl,
+          apiKey: settings.openAI.apiKey ?? '',
+          model: initial.model || settings.openAI.model,
+        }
+      : { id: 'deepseek', apiKey: settings.apiKey ?? '' }
+
   try {
     for (let attempt = 0; ; attempt += 1) {
       /** 附件补齐前出错属于上传失败，请求还没有发出 */
       let preparing = true
       let receivedContent = false
       try {
-        const prepared = await prepareFiles(sessionId, request, controller.signal)
+        const prepared = await prepareFiles(sessionId, request, controller.signal, provider.id)
         preparing = false
         // 附件就绪后获取本轮信息；续写沿用原回答快照，重新生成的快照独立保存。
         const latestReminder = prepared.prefix
@@ -996,16 +1020,20 @@ const streamReply = async (sessionId: string, initial: AssistantMessage, request
           initial.thinking ?? false,
           latestReminder
         )
-        const events = streamMessage(
-          useSettings.getState().apiKey ?? '',
+        const events = streamProviderMessage(
+          provider,
           {
             model: initial.model ?? MODEL,
-            system: SYSTEM_PROMPT,
+            system: provider.id === 'deepseek' ? SYSTEM_PROMPT : OPENAI_SYSTEM_PROMPT,
             messages,
-            thinking: { type: initial.thinking ? 'enabled' : 'disabled' },
+            thinking: {
+              type: provider.id === 'deepseek' && initial.thinking ? 'enabled' : 'disabled',
+            },
             safety_check: SAFETY_CHECK,
-            tools: serverTools(initial.search ?? false),
-            ...(titleRequests.has(controller) ? { title: { enabled: true } } : {}),
+            tools: provider.id === 'deepseek' ? serverTools(initial.search ?? false) : [],
+            ...(provider.id === 'deepseek' && titleRequests.has(controller)
+              ? { title: { enabled: true } }
+              : {}),
           },
           controller.signal
         )

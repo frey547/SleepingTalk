@@ -319,6 +319,8 @@
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-markdown-code-block);
   border-radius: var(--dsl-code-block-border-radius);
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .md-code-block:not(:last-child) {
@@ -338,8 +340,22 @@
   font: var(--dsl-code-block-content-font);
   padding: 16px;
   margin: 0 !important;
-  white-space: pre-wrap;
-  word-break: break-all;
+  max-width: 100%;
+  white-space: pre;
+  word-break: normal;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media not all and (min-width: 768px) {
+  .md-code-block {
+    --dsl-code-block-border-radius: 8px;
+  }
+
+  .md-code-block > pre {
+    padding: 14px 12px;
+  }
 }
 
 .markdown-table-wrapper {

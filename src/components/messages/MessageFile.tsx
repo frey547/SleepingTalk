@@ -140,7 +140,7 @@ export const MessageFile = ({
         className={clsx(styles.image, styles.imageThumb)}
         href={url}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         title={file.name}
       >
         {preview}
@@ -158,7 +158,7 @@ export const MessageFile = ({
       status={uploading ? 'uploading' : failed ? 'error' : 'done'}
       error={errorText}
       onRetry={retry ?? undefined}
-      onOpen={url && !upload ? () => window.open(url, '_blank', 'noreferrer') : undefined}
+      onOpen={url && !upload ? () => window.open(url, '_blank', 'noopener,noreferrer') : undefined}
     />
   )
 }

@@ -137,3 +137,17 @@
     --search-row-site-logo-color: var(--dsw-alias-interactive-bg-hover);
   }
 }
+
+@media not all and (min-width: 768px) {
+  .bottom {
+    left: 0;
+    min-height: 44px;
+    gap: 4px;
+    padding-top: 8px;
+  }
+
+  .actions {
+    gap: 2px;
+    opacity: 1;
+  }
+}

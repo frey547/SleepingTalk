@@ -1,4 +1,4 @@
-import { ApiError, API_ORIGIN, request } from './client.js'
+import { ApiError, API_ORIGIN, redactSensitiveText, request } from './client.js'
 
 /**
  * 语音接口：
@@ -32,7 +32,7 @@ export const transcribe = async (
   try {
     body = JSON.parse(raw)
   } catch {
-    throw new ApiError('protocol', raw)
+    throw new ApiError('protocol', redactSensitiveText(raw, [apiKey.trim()]))
   }
   if (
     typeof body !== 'object' ||
@@ -40,7 +40,7 @@ export const transcribe = async (
     !('text' in body) ||
     typeof body.text !== 'string'
   ) {
-    throw new ApiError('protocol', raw)
+    throw new ApiError('protocol', redactSensitiveText(raw, [apiKey.trim()]))
   }
   return body.text
 }
@@ -59,7 +59,7 @@ export const synthesize = async (
     signal,
   })
   if (!response.body) {
-    throw new ApiError('protocol', await response.text())
+    throw new ApiError('protocol', redactSensitiveText(await response.text(), [apiKey.trim()]))
   }
   return response.body
 }

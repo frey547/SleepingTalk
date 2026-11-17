@@ -1,75 +1,52 @@
-# chat-demo
+# SleepingTalk
 
-English | [简体中文](README.zh-CN.md)
 
-A static chat demo powered by the DeepSeek API. No application backend is required: the browser connects directly to the configured API service.
 
-You can [try the app online](https://deepseek-ai.github.io/chat-demo/) or download the archive from [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases), extract it, and double-click `index.html` to use it locally without installation or a build. Enter your API key in Settings before your first chat.
+SleepingTalk 是一款独立的、本地优先的 AI 聊天客户端，支持 Web、PWA 和 Android 平台。它支持官方 DeepSeek API，以及可配置的 OpenAI Chat Completions 兼容服务商，包括自定义 Base URL、API Key 和模型。
 
-## Getting started
+SleepingTalk 是一个独立的第三方项目，与 DeepSeek 没有任何隶属、认可或合作开发关系。
 
-Install Node.js 22.12+ and pnpm, then run:
+## 功能特性
 
-```sh
-git clone https://github.com/deepseek-ai/chat-demo.git
-cd chat-demo
+- 流式响应与多轮对话。
+- 支持多个 API 服务商，并可分别配置各服务商的参数。
+- 本地聊天记录、消息编辑、重新生成和对话分支切换。
+- 支持 Markdown、代码语法高亮、KaTeX 数学公式和 Mermaid 图表。
+- 响应式移动端界面、PWA 支持及基于 Capacitor 的 Android 项目。
+
+## 本地数据
+
+API Key 和相关设置存储在 localStorage 中。对话记录及附件原件存储在 IndexedDB 中。聊天内容会直接发送至用户选择的 API 服务商；本仓库不包含 SleepingTalk 自有的应用后端服务。
+
+## 开发指南
+
+需要 Node.js 22.12 或更高版本，以及 pnpm。
+
+```
 pnpm install
 pnpm dev
 ```
 
-Open http://localhost:8090.
+开发服务器运行地址为 http://localhost:8090。使用 `pnpm build` 可以构建静态网站，生成的文件位于 `dist/` 目录中。
 
-To build the static site:
+### Android 开发环境
 
-```sh
-pnpm build
-```
+Android 开发需要 JDK 21 和 Android SDK。请使用标准本地开发工具配置：
 
-The output is written to `dist/`. Deploy it to a static web server or open `dist/index.html` directly. Opening the file directly requires browser support for storage on `file://` pages and an API service that permits their cross-origin requests.
+- 将 `JAVA_HOME` 设置为本地 JDK 21 的安装路径，或者在 Android Studio 中将 Gradle JDK 设置为 JDK 21。
+- 如果通过终端进行构建，请将 `ANDROID_HOME` 或 `ANDROID_SDK_ROOT` 设置为本地 Android SDK 的安装路径。
+- Android Studio 可能会自动创建 `android/local.properties`，其中包含本地 `sdk.dir` 配置。该文件已被 Git 忽略，不会提交到仓库。
 
-## Features
+与具体设备相关的编辑器设置、SDK 路径、签名密钥及签名属性文件必须保留在本地，不得提交到 Git 仓库。
 
-- Multiple conversations with automatic titles, renaming, and deletion; edit prompts, regenerate replies, and switch between message branches.
-- Streaming replies, deep thinking, smart search, link reading, and source citations; stop generation or continue eligible replies.
-- Upload, paste, or drag and drop attachments; use voice input and read replies aloud. A live audio spectrum appears in the first row of the input area while recording on mobile.
-- Markdown, syntax highlighting, KaTeX math, and Mermaid diagrams.
-- Simplified Chinese and English, light and dark themes, mobile layouts, location settings, and chat history import and export.
+## 上游项目
 
-## Data and storage
+SleepingTalk 基于 DeepSeek 官方的 [chat-demo](https://github.com/deepseek-ai/chat-demo) 项目开发。原始 DeepSeek 版权声明及 MIT 许可证已保留在 LICENSE 文件中。
 
-Your API key and settings are stored in the browser's localStorage. Conversations and original attachments are stored in IndexedDB. Local data is isolated by browser profile and site origin. Sending messages, uploading attachments, and using speech features sends the relevant content to the configured API service.
+项目中对 DeepSeek 的服务商名称和 API 集成的引用，仅用于说明与 DeepSeek 服务的兼容性，并不代表本项目与 DeepSeek 存在官方关联。
 
-History import and export in Settings use ZIP archives. After confirmation and successful validation, importing replaces all local conversations and attachments. Exports include conversations and locally available original images, but exclude API keys, settings, and original non-image attachments. See the [history import/export documentation (Chinese)](src/services/chat/history/README.md) for the archive format and preservation details.
+## 许可证
 
-Settings → Data → Delete all chats clears all local conversations, original attachments, and unsent drafts after confirmation. It stops ongoing replies and returns to a new chat. Your API key and settings are preserved; files already uploaded to the API service are not deleted.
+本项目采用 MIT 许可证。原始 DeepSeek chat-demo 项目的版权声明及许可声明仍包含在 LICENSE 文件中，必须予以保留。
 
-## Development
-
-| Command       | Description                  |
-| ------------- | ---------------------------- |
-| `pnpm dev`    | Start the development server |
-| `pnpm build`  | Build into `dist/`           |
-| `pnpm type`   | Run TypeScript type checks   |
-| `pnpm lint`   | Lint with oxlint             |
-| `pnpm format` | Format with oxfmt            |
-
-[rspack.config.ts](rspack.config.ts) uses `https://api.deepseek.com` by default. Use `createConfig({ apiOrigin, devServer })` to customize the API origin and development server proxy.
-
-Chat uses `deepseek-flash` by default through Anthropic-compatible Messages / Files APIs. Speech features use ASR / TTS endpoints. Requests include extensions for search, link reading, titles, and `latest_reminder`, so the configured service must support the corresponding capabilities. Supported attachment formats are determined by server-side validation.
-
-```text
-src/
-  app/                 Application layout, themes, and global styles
-  components/          Chat, settings, Markdown, and other UI components
-  i18n/                English and Chinese translations
-  services/
-    api/               API requests, SSE, and protocol types
-    chat/              Conversations, message branches, storage, and history import/export
-    markdown/          Markdown parsing, syntax highlighting, and diagrams
-    speech/            Audio recording and read-aloud playback
-  utils/               Shared utilities
-```
-
-## License
-
-[MIT](LICENSE). The build copies the license to `dist/LICENSE`; include it when distributing the app. Third-party dependencies are subject to their own licenses.
+第三方依赖及项目中打包的资源仍受各自许可证约束，详情请参阅 `THIRD_PARTY_NOTICES` 文件。

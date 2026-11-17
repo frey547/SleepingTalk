@@ -27,6 +27,13 @@
     overscroll-behavior-y: contain;
     scrollbar-color: var(--scroll-color) transparent;
   }
+
+  .column {
+    width: auto;
+    max-width: none;
+    margin: 0 12px;
+    padding-bottom: 16px;
+  }
 }
 
 .column {

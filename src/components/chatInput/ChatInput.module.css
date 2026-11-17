@@ -330,3 +330,21 @@
     cursor: not-allowed;
   }
 }
+
+@media not all and (min-width: 768px) {
+  .functionRow {
+    min-height: 52px;
+    padding: 8px;
+  }
+
+  .toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding-inline: 10px;
+  }
+
+  .sendButton {
+    width: 44px;
+    height: 44px;
+  }
+}
